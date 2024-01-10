@@ -15,19 +15,15 @@ class Songs extends StatefulWidget {
 }
 
 class _SongsState extends State<Songs> {
-
   late Parser parser;
   TextEditingController textcontroler = TextEditingController();
   int pageindex = 1;
   String? sirchword;
 
-
   TextStyle artistStyle = TextStyle(
       color: Colors.white,
       //letterSpacing: 0,
-    fontSize: 17
-  );
-
+      fontSize: 17);
 
   @override
   void initState() {
@@ -49,7 +45,7 @@ class _SongsState extends State<Songs> {
               children: [
                 SizedBox(height: 60),
                 Visibility(
-                  visible: widget.link == null ? true: false,
+                  visible: widget.link == null ? true : false,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15.0),
                     child: Container(
@@ -57,7 +53,6 @@ class _SongsState extends State<Songs> {
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(13),
                       ),
-
                       child: Row(
                         children: [
                           Padding(
@@ -67,149 +62,153 @@ class _SongsState extends State<Songs> {
                               child: Image.asset('lib/icons/lupa2.png'),
                             ),
                           ),
-                          Expanded
-                            (child: TextField(
+                          Expanded(
+                            child: TextField(
                               controller: textcontroler,
-                            onEditingComplete: (){
-                               //if
-                              setState(() {
-                                sirchword = textcontroler.text;
-                              });
-
-
-                            },
-                            decoration: InputDecoration(
-                                border: InputBorder.none
+                              onEditingComplete: () {
+                                //if
+                                setState(() {
+                                  sirchword = textcontroler.text;
+                                });
+                              },
+                              decoration:
+                                  InputDecoration(border: InputBorder.none),
                             ),
-                          ),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-
                 FutureBuilder<List<SongItem>?>(
-                  future: widget.link == null ? parser.getListSong(pageindex.toString(), sirchword) : parser.getCustomSongs(widget.link!),
-                  builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-                    if (snapshot.connectionState != ConnectionState.waiting){
+                  future: widget.link == null
+                      ? parser.getListSong(pageindex.toString(), sirchword)
+                      : parser.getCustomSongs(widget.link!),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                    if (snapshot.connectionState != ConnectionState.waiting) {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                            List.generate(parser.listsong2.length+1, (index) {
-                              if (parser.listsong2.length == index)
-                                {
-                                 return Row(
-                                    mainAxisAlignment:MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      IconButton(
-                                        onPressed: (){
-                                          setState(() {
-                                            pageindex--;
-                                          });
-
-                                        },
-                                        icon: Icon(Icons.arrow_back_ios),
-                                        color: Colors.purple,
-                                      ),
-                                      IconButton(onPressed: (){
-                                        setState(() {
-                                          pageindex++;
-                                        });
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(parser.listsong2.length + 1,
+                              (index) {
+                            if (parser.listsong2.length == index) {
+                              return Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        pageindex--;
+                                      });
+                                    },
+                                    icon: Icon(Icons.arrow_back_ios),
+                                    color: Colors.purple,
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        pageindex++;
+                                      });
+                                    },
+                                    icon: Icon(Icons.arrow_forward_ios),
+                                    color: Colors.purple,
+                                  ),
+                                ],
+                              );
+                            }
+                            return Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10.0, vertical: 7),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 6,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => SongAcords(
+                                                    song:
+                                                        parser.listsong2[index],
+                                                    ispodbor1: false,
+                                                  )),
+                                        );
                                       },
-                                        icon: Icon(Icons.arrow_forward_ios),
-                                        color: Colors.purple,
-
-                                      ),
-                                    ],
-                                  );
-                                }
-                              return Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 7),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 6,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => SongAcords(song: parser.listsong2[index], ispodbor1: false,)),);
-                                        },
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Padding(
-                                              padding: EdgeInsets.only(left: 5.0),
-                                              child: Text(parser.listsong2[index].songname,
-                                                style: TextStyle(
-                                                 fontSize: 20,
-                                                  color: Colors.white,
-                                                ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: EdgeInsets.only(left: 5.0),
+                                            child: Text(
+                                              parser.listsong2[index].songname,
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                color: Colors.white,
                                               ),
                                             ),
-                                            SizedBox(height: 1),
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 5.0),
-                                              child: Text(parser.listsong2[index].artist,
-                                                textAlign: TextAlign.left,
-                                                style: TextStyle(
+                                          ),
+                                          SizedBox(height: 1),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 5.0),
+                                            child: Text(
+                                              parser.listsong2[index].artist,
+                                              textAlign: TextAlign.left,
+                                              style: TextStyle(
                                                 fontSize: 16,
                                                 color: Colors.grey,
-                                                ),
                                               ),
                                             ),
-                                         ],
-                                  ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                Expanded(child: Container(),),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
+                                  ),
+                                  Expanded(
+                                    child: Container(),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
                                     child: Center(
                                       child: Icon(
-                                         Icons.star_border,
-                                          color: Colors.purple,
-                                             ),
-                                          ),
-                                        ),
-                                      ],
+                                        Icons.star_border,
+                                        color: Colors.purple,
+                                      ),
                                     ),
-                                );
-                              // TextStyle mytextstyle;
-                              // if (parser.listsong2[index].contains('Am'))
-                              //   mytextstyle = chordsStyle;
-                              // else
-                              //   mytextstyle = songStyle;
-                              // return Text(parser.listsong2[index].replaceAll('  ', '    '), style: mytextstyle,);
-                            }
-                            ),
+                                  ),
+                                ],
+                              ),
+                            );
+                            // TextStyle mytextstyle;
+                            // if (parser.listsong2[index].contains('Am'))
+                            //   mytextstyle = chordsStyle;
+                            // else
+                            //   mytextstyle = songStyle;
+                            // return Text(parser.listsong2[index].replaceAll('  ', '    '), style: mytextstyle,);
+                          }),
                         ),
                       );
-                    }
-                    else{
+                    } else {
                       return Container(
                           height: 600,
-                          child: Center(child: CircularProgressIndicator(
+                          child: Center(
+                              child: CircularProgressIndicator(
                             color: Colors.purple,
                           )));
                     }
                   },
-
                 ),
-
-
-
-                SizedBox(height: 100,)
-
+                SizedBox(
+                  height: 100,
+                )
               ],
             ),
           ),
-
-
-
           Hero(
             tag: 'botbar',
             child: Column(
@@ -224,8 +223,9 @@ class _SongsState extends State<Songs> {
                         children: [
                           Expanded(
                             child: TextButton(
-                              onPressed: (){},
-                              child: Image.asset('lib/icons/music.png',
+                              onPressed: () {},
+                              child: Image.asset(
+                                'lib/icons/music.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.purple,
@@ -234,13 +234,15 @@ class _SongsState extends State<Songs> {
                           ),
                           Expanded(
                             child: TextButton(
-                              onPressed: (){
+                              onPressed: () {
                                 Navigator.pushAndRemoveUntil(
-                                    context, MaterialPageRoute(
-                                    builder: (_) => HomePage()),
-                                        (Route<dynamic> route )  => false);
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => HomePage()),
+                                    (Route<dynamic> route) => false);
                               },
-                              child: Image.asset('lib/icons/home.png',
+                              child: Image.asset(
+                                'lib/icons/home.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.grey.shade300,
@@ -249,14 +251,14 @@ class _SongsState extends State<Songs> {
                           ),
                           Expanded(
                             child: TextButton(
-                              onPressed: (){
+                              onPressed: () {
                                 Navigator.pushAndRemoveUntil(
-                                    context, MaterialPageRoute(
-                                    builder: (_) => Acords()),
-                                        (Route<dynamic> route )  => false);
+                                    context,
+                                    MaterialPageRoute(builder: (_) => Acords()),
+                                    (Route<dynamic> route) => false);
                               },
-                              child: Image.asset('lib/icons/acord.png',
-
+                              child: Image.asset(
+                                'lib/icons/acord.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.grey.shade300,
@@ -274,13 +276,8 @@ class _SongsState extends State<Songs> {
                       gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [Colors.black, Colors.transparent]
-                      )
-                  ),
+                          colors: [Colors.black, Colors.transparent])),
                 ),
-
-
-
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gitars_app/Widgets/podborki.dart';
 import 'package:gitars_app/Widgets/tematika.dart';
+import 'package:gitars_app/detale_scrin.dart';
 import 'package:gitars_app/popular_songs_lists.dart';
 import 'package:gitars_app/songs.dart';
 
@@ -21,46 +22,56 @@ class _HomePageState extends State<HomePage> {
     [
       'lib/images/aria.png',
       'Ария',
-      'Хеви-метал-группа',
+      'Советская и российская хеви-метал-группа, играющая в стиле метал',
       'https://3akkorda.net/russkie/ariya/'
     ],
     [
       'lib/images/bi22.png',
       'Би-2',
-      'Белорусская и российская рок-группа',
+      'Белорусская и российская рок-группа, образованная в 1988',
       'https://3akkorda.net/russkie/bi2/'
     ],
     [
       'lib/images/max.png',
       'Макс Корж',
-      'Автор песен и композитор',
+      'Автор и исполнитель собственных композиций из Беларуси',
       'https://3akkorda.net/russkie/maks-korzh/'
     ],
     [
       'lib/images/coi2.png',
       'Виктор Цой',
-      ' Легенда Русского рока',
+      'Основатель и лидер рок-группы «Кино». Легенда Русского рока',
       'https://3akkorda.net/russkie/viktor-coj/'
     ],
     [
       'lib/images/king.png',
       'Король и Шут',
-      'Хоррор-панк-группа',
+      'Советская и российская хоррор-панк-группа из Санкт-Петербурга',
       'https://3akkorda.net/russkie/korol-i-shut/'
     ],
     [
       'lib/images/shvec.png',
       'Алена Швец',
-      'Автор-исполнитель,гитарист',
+      'Российская певица, автор-исполнитель, гитарист, клавишник и укулелист',
       'https://3akkorda.net/russkie/alena-svec/'
     ],
     [
       'lib/images/nautilius.png',
       'Nautilus Pompilius',
-      'Уральско-питерская рок-группа',
+      'Уральско-питерская популярная рок-группа , создана в конце 70-х',
       'https://3akkorda.net/russkie/nautilus-pompilius/'
     ],
   ];
+
+  final List<String> items = [
+    'Item 1',
+    'Item 2',
+    'Item 3',
+    'Item 4',
+    'Item 5',
+    'Item 6',
+  ];
+
   final List tematics = [
     [
       'lib/images/pfilm.png',
@@ -130,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                 //     child: Image.asset('lib/icons/home.png',
                 //       height: 25,
                 //       width: 25,
-                //       color: Colors.purple,
+                //       color: Colors.purple,z
                 //     ),
                 //   ),
                 // ),
@@ -138,7 +149,7 @@ class _HomePageState extends State<HomePage> {
                 // Ps
                 SizedBox(height: 13),
 
-                /*Center(
+                Center(
                   child: Text(
                     'Выбирай свою музыку',
                     style: TextStyle(
@@ -174,9 +185,9 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
-                ),*/
+                ),
 
-                SizedBox(height: 1),
+                SizedBox(height: 25),
 
                 Center(
                   child: Text(
@@ -190,8 +201,7 @@ class _HomePageState extends State<HomePage> {
 
                 Container(
                   decoration: BoxDecoration(),
-                  height: 320,
-                  //margin: EdgeInsets.symmetric(horizontal: ),
+                  height: 330,
                   child: PageView.builder(
                       controller:
                           PageController(viewportFraction: 0.9, initialPage: 2),
@@ -209,10 +219,16 @@ class _HomePageState extends State<HomePage> {
                                       )),
                             );
                           },
-                          child: Popular_Widget(
-                            photo: popular[index][0],
-                            name: popular[index][1],
-                            info: popular[index][2],
+                          child: Column(
+                            children: [
+                              Flexible(
+                                child: Popular_Widget(
+                                  photo: popular[index][0],
+                                  name: popular[index][1],
+                                  info: popular[index][2],
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }),
@@ -246,13 +262,13 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (context, index) {
                       return GestureDetector(
                         onTap: () {
+                          // Navigate to detailed view
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => PopularSongs(
-                                      link: Podbor[index][1],
-                                      ispodbor: true,
-                                    )),
+                              builder: (context) =>
+                                  DetailScreen(item: items[index]),
+                            ),
                           );
                         },
                         child: Podborki(

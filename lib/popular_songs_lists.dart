@@ -8,7 +8,8 @@ import 'package:gitars_app/songs.dart';
 import 'homepage.dart';
 
 class PopularSongs extends StatefulWidget {
-  const PopularSongs({Key? key, String? this.link, required bool this.ispodbor}) : super(key: key);
+  const PopularSongs({Key? key, String? this.link, required bool this.ispodbor})
+      : super(key: key);
 
   final String? link;
   final bool ispodbor;
@@ -18,35 +19,29 @@ class PopularSongs extends StatefulWidget {
 }
 
 class _PopularSongsState extends State<PopularSongs> {
-
   late Parser parser;
   TextEditingController textcontroler = TextEditingController();
   int pageindex = 1;
   String? sirchword;
 
-
   TextStyle artistStyle = TextStyle(
       color: Colors.white,
       //letterSpacing: 0,
-      fontSize: 17
-  );
-
+      fontSize: 17);
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    parser = widget.ispodbor? Parserpodbor() : Parser();
+    parser = widget.ispodbor ? Parserpodbor() : Parser();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         backgroundColor: Colors.grey.shade900,
       ),
-
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.grey.shade900,
       body: Stack(
@@ -56,17 +51,19 @@ class _PopularSongsState extends State<PopularSongs> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 FutureBuilder<List<SongItem>?>(
-                  future:parser.getCustomSongs(widget.link!),
-                  builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-                    if (snapshot.connectionState != ConnectionState.waiting){
+                  future: parser.getCustomSongs(widget.link!),
+                  builder:
+                      (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                    if (snapshot.connectionState != ConnectionState.waiting) {
                       return Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children:
-                          List.generate(parser.listsong2.length, (index) {
+                              List.generate(parser.listsong2.length, (index) {
                             return Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 7),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10.0, vertical: 7),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -75,14 +72,22 @@ class _PopularSongsState extends State<PopularSongs> {
                                       onTap: () {
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(builder: (context) => SongAcords(song: parser.listsong2[index], ispodbor1: false,)),);
+                                          MaterialPageRoute(
+                                              builder: (context) => SongAcords(
+                                                    song:
+                                                        parser.listsong2[index],
+                                                    ispodbor1: false,
+                                                  )),
+                                        );
                                       },
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Padding(
                                             padding: EdgeInsets.only(left: 5.0),
-                                            child: Text(parser.listsong2[index].songname,
+                                            child: Text(
+                                              parser.listsong2[index].songname,
                                               style: TextStyle(
                                                 fontSize: 20,
                                                 color: Colors.white,
@@ -91,8 +96,10 @@ class _PopularSongsState extends State<PopularSongs> {
                                           ),
                                           SizedBox(height: 1),
                                           Padding(
-                                            padding: const EdgeInsets.only(left: 5.0),
-                                            child: Text(parser.listsong2[index].artist,
+                                            padding: const EdgeInsets.only(
+                                                left: 5.0),
+                                            child: Text(
+                                              parser.listsong2[index].artist,
                                               textAlign: TextAlign.left,
                                               style: TextStyle(
                                                 fontSize: 16,
@@ -104,7 +111,9 @@ class _PopularSongsState extends State<PopularSongs> {
                                       ),
                                     ),
                                   ),
-                                  Expanded(child: Container(),),
+                                  Expanded(
+                                    child: Container(),
+                                  ),
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: Center(
@@ -123,32 +132,25 @@ class _PopularSongsState extends State<PopularSongs> {
                             // else
                             //   mytextstyle = songStyle;
                             // return Text(parser.listsong2[index].replaceAll('  ', '    '), style: mytextstyle,);
-                          }
-                          ),
+                          }),
                         ),
                       );
-                    }
-                    else{
+                    } else {
                       return Container(
-                        height: 650,
-                          child: Center(child: CircularProgressIndicator(
+                          height: 650,
+                          child: Center(
+                              child: CircularProgressIndicator(
                             color: Colors.purple,
                           )));
                     }
                   },
-
                 ),
-
-
-
-                SizedBox(height: 100,)
-
+                SizedBox(
+                  height: 100,
+                )
               ],
             ),
           ),
-
-
-
           Hero(
             tag: 'botbar',
             child: Column(
@@ -163,13 +165,14 @@ class _PopularSongsState extends State<PopularSongs> {
                         children: [
                           Expanded(
                             child: TextButton(
-                              onPressed: (){
+                              onPressed: () {
                                 Navigator.pushAndRemoveUntil(
-                                    context, MaterialPageRoute(
-                                    builder: (_) => Songs()),
-                                        (Route<dynamic> route )  => false);
+                                    context,
+                                    MaterialPageRoute(builder: (_) => Songs()),
+                                    (Route<dynamic> route) => false);
                               },
-                              child: Image.asset('lib/icons/music.png',
+                              child: Image.asset(
+                                'lib/icons/music.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.grey.shade300,
@@ -178,8 +181,9 @@ class _PopularSongsState extends State<PopularSongs> {
                           ),
                           Expanded(
                             child: TextButton(
-                              onPressed: (){},
-                              child: Image.asset('lib/icons/home.png',
+                              onPressed: () {},
+                              child: Image.asset(
+                                'lib/icons/home.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.purple,
@@ -188,14 +192,14 @@ class _PopularSongsState extends State<PopularSongs> {
                           ),
                           Expanded(
                             child: TextButton(
-                              onPressed: (){
+                              onPressed: () {
                                 Navigator.pushAndRemoveUntil(
-                                    context, MaterialPageRoute(
-                                    builder: (_) => Acords()),
-                                        (Route<dynamic> route )  => false);
+                                    context,
+                                    MaterialPageRoute(builder: (_) => Acords()),
+                                    (Route<dynamic> route) => false);
                               },
-                              child: Image.asset('lib/icons/acord.png',
-
+                              child: Image.asset(
+                                'lib/icons/acord.png',
                                 height: 25,
                                 width: 25,
                                 color: Colors.grey.shade300,
@@ -213,13 +217,8 @@ class _PopularSongsState extends State<PopularSongs> {
                       gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [Colors.black, Colors.transparent]
-                      )
-                  ),
+                          colors: [Colors.black, Colors.transparent])),
                 ),
-
-
-
               ],
             ),
           ),
