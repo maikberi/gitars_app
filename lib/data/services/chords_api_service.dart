@@ -23,7 +23,7 @@ class ChordsApiService {
   ChordsApiService({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const _baseUrl = 'https://3akkorda.net';
+  static const _baseUrl = 'https://amdm.ru';
   static const _timeout = Duration(seconds: 12);
 
   Future<Document> _getDocument(Uri uri) async {
@@ -39,48 +39,57 @@ class ChordsApiService {
     return html_parser.parse(response.body);
   }
 
-  /// Список песен на странице поиска/каталога [page], опционально
-  /// отфильтрованный по [query].
+  /// Поиск песен по слову [query]. Пагинация ([page]) на amdm.ru для
+  /// результатов поиска не подтверждена, поэтому пока всегда отдаётся
+  /// первая страница результатов.
   Future<List<SongSummary>> fetchSongsPage({
     required int page,
     String? query,
   }) async {
     final uri = (query == null || query.isEmpty)
-        ? Uri.parse('$_baseUrl/page/$page/')
-        : Uri.parse('$_baseUrl/page/$page/?s=${Uri.encodeQueryComponent(query)}');
+        ? Uri.parse('$_baseUrl/akkordi/popular/')
+        : Uri.parse('$_baseUrl/search/?q=${Uri.encodeQueryComponent(query)}');
     final doc = await _getDocument(uri);
-    return _parseSongCards(doc);
+    return _parseSongRows(doc);
   }
 
-  /// Список песен по произвольной ссылке коллекции/исполнителя.
+  /// Список песен по произвольной ссылке исполнителя/подборки/темы —
+  /// на amdm.ru все они используют одну и ту же вёрстку списка.
   Future<List<SongSummary>> fetchSongsFromLink(String link) async {
     final doc = await _getDocument(Uri.parse(link));
-    return _parseSongCards(doc);
+    return _parseSongRows(doc);
   }
 
-  List<SongSummary> _parseSongCards(Document doc) {
-    final cards = doc.getElementsByClassName('post-inner post-hover');
+  /// amdm.ru использует два разных шаблона таблицы `table.items`:
+  /// на общих страницах (главная, поиск, темы) каждая ячейка `td.artist_name`
+  /// содержит две ссылки `a.artist` — исполнитель и песня; на странице
+  /// конкретного исполнителя каждая песня — это просто `<a class="g-link">`
+  /// без имени исполнителя в строке (оно и так известно по контексту).
+  List<SongSummary> _parseSongRows(Document doc) {
+    final byCell = _parseArtistSongCells(doc);
+    if (byCell.isNotEmpty) return byCell;
+    return _parseSingleArtistRows(doc);
+  }
+
+  List<SongSummary> _parseArtistSongCells(Document doc) {
+    final cells = doc.querySelectorAll('td.artist_name');
     final result = <SongSummary>[];
-    for (final card in cards) {
-      final item = _trySummaryFromCard(card);
+    for (final cell in cells) {
+      final item = _trySongFromCell(cell);
       if (item != null) result.add(item);
     }
     return result;
   }
 
-  SongSummary? _trySummaryFromCard(Element card) {
+  SongSummary? _trySongFromCell(Element cell) {
     try {
-      final titleLink = card.querySelector('a[title]') ?? card.querySelector('a');
-      if (titleLink == null) return null;
-      final rawTitle = (titleLink.attributes['title'] ?? titleLink.text).trim();
-      final href = titleLink.attributes['href'];
-      if (href == null || !rawTitle.contains('–')) return null;
-
-      final parts = rawTitle.split(' – ');
-      if (parts.length < 2) return null;
-      final artist = parts.first.trim();
-      final title = parts.sublist(1).join(' – ').trim();
-      if (artist.isEmpty || title.isEmpty) return null;
+      final links = cell.querySelectorAll('a.artist');
+      if (links.length < 2) return null;
+      final artist = links[0].text.trim();
+      final songLink = links[1];
+      final title = songLink.text.trim();
+      final href = songLink.attributes['href'];
+      if (href == null || artist.isEmpty || title.isEmpty) return null;
 
       return SongSummary.fromLink(title: title, artist: artist, link: href);
     } catch (_) {
@@ -88,15 +97,51 @@ class ChordsApiService {
     }
   }
 
+  List<SongSummary> _parseSingleArtistRows(Document doc) {
+    final artist = _impliedArtistName(doc);
+    if (artist == null) return const [];
+
+    final result = <SongSummary>[];
+    for (final table in doc.querySelectorAll('table.items')) {
+      for (final link in table.querySelectorAll('td > a.g-link')) {
+        final title = link.text.trim();
+        final href = link.attributes['href'];
+        if (href == null || title.isEmpty) continue;
+        result.add(SongSummary.fromLink(title: title, artist: artist, link: href));
+      }
+    }
+    return result;
+  }
+
+  /// На amdm.ru заголовок страницы исполнителя/песни начинается с его имени
+  /// вида "Исполнитель - ...", это самый надёжный источник имени без
+  /// привязки к конкретной вёрстке блока.
+  String? _impliedArtistName(Document doc) {
+    final title = doc.querySelector('title')?.text;
+    if (title == null) return null;
+    final parts = title.split(' - ');
+    if (parts.length < 2) return null;
+    final artist = parts.first.trim();
+    return artist.isEmpty ? null : artist;
+  }
+
   /// Полный текст с аккордами для конкретной песни.
+  ///
+  /// На amdm.ru весь текст+аккорды лежат в одном `<pre class="podbor__text">`
+  /// как уже готовый многострочный текст: аккорды — это
+  /// `<div class="podbor__chord"><span>ИмяАккорда</span></div>` внутри строки,
+  /// разделы песни — `<div class="podbor__keyword">[Куплет]:</div>`, а блок
+  /// повторяющегося куплета обёрнут в `<div class="podbor__pripev">`.
+  /// Разрывы строк там настоящие (`\n`), поэтому после снятия тегов текст
+  /// остаётся построчным, как и раньше.
   Future<SongDetails> fetchSongDetails(SongSummary song) async {
     final doc = await _getDocument(Uri.parse(song.link));
-    final verse = doc.getElementsByClassName('verse');
-    if (verse.isEmpty) {
+    final container = doc.querySelector('pre.podbor__text');
+    if (container == null) {
       throw ChordsApiException('Текст песни не найден');
     }
 
-    final rawLines = _htmlToLines(verse.first.innerHtml);
+    final rawLines = _htmlToLines(container.innerHtml);
     final lines = rawLines
         .map((text) => SongLine(text: text, isChordLine: _looksLikeChordLine(text)))
         .toList();
@@ -106,7 +151,11 @@ class ChordsApiService {
 
   List<String> _htmlToLines(String innerHtml) {
     final withBreaks = innerHtml.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
-    final noTags = withBreaks.replaceAll(RegExp(r'<[^>]*>'), '');
+    // Соседние теги без текста между ними (например закрывающийся блок
+    // раздела и сразу открывающийся блок аккордов) иначе слипаются в одно
+    // слово после снятия тегов.
+    final spaced = withBreaks.replaceAll('><', '> <');
+    final noTags = spaced.replaceAll(RegExp(r'<[^>]*>'), '');
     return _unescapeHtml(noTags).split('\n');
   }
 
@@ -120,8 +169,10 @@ class ChordsApiService {
         .replaceAll('&#39;', "'");
   }
 
+  // Хвост вида "(V)"/"(VII)" — позиция баррэ, которую amdm.ru добавляет
+  // к части аккордов (A(V), B(VII) и т.п.).
   static final RegExp _chordToken = RegExp(
-    r'^[A-H](#|b)?(m|maj|min|sus|dim|aug|add)?[0-9]*(/[A-H](#|b)?)?$',
+    r'^[A-H](#|b)?(m|maj|min|sus|dim|aug|add)?[0-9]*(/[A-H](#|b)?)?(\([IVXivx0-9]+\))?$',
   );
 
   bool _looksLikeChordLine(String line) {

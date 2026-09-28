@@ -9,93 +9,78 @@ class SongsRepository {
 
   final ChordsApiService _api;
 
+  // Ссылки ниже — реальные адреса со страниц amdm.ru (проверено по присланной
+  // разметке), а не догадки: /akkordi/<slug>/ у них общий шаблон и для
+  // исполнителей, и для тематических подборок.
   static const List<Artist> popularArtists = [
     Artist(
-      name: 'Кино',
-      description: 'Виктор Цой — легенда русского рока',
-      image: 'lib/images/coi2.png',
-      songsLink: 'https://3akkorda.net/russkie/viktor-coj/',
+      name: 'Король и Шут',
+      description: 'Хоррор-панк из Санкт-Петербурга',
+      image: 'lib/images/king.png',
+      songsLink: 'https://amdm.ru/akkordi/korol_i_shut/',
+    ),
+    Artist(
+      name: 'Гражданская Оборона',
+      description: 'ГО, ГрОб — Егор Летов',
+      image: 'lib/images/nervi.png',
+      songsLink: 'https://amdm.ru/akkordi/grazhdanskaya_oborona/',
+    ),
+    Artist(
+      name: 'Сектор Газа',
+      description: 'Юрий Хой и «Сектор Газа»',
+      image: 'lib/images/gitara.png',
+      songsLink: 'https://amdm.ru/akkordi/sektor_gaza/',
     ),
     Artist(
       name: 'ДДТ',
       description: 'Юрий Шевчук и группа ДДТ',
       image: 'lib/images/nervi.png',
-      songsLink: 'https://3akkorda.net/russkie/ddt/',
+      songsLink: 'https://amdm.ru/akkordi/ddt/',
     ),
     Artist(
       name: 'Сплин',
       description: 'Александр Васильев и «Сплин»',
       image: 'lib/images/bi22.png',
-      songsLink: 'https://3akkorda.net/russkie/splin/',
-    ),
-    Artist(
-      name: 'Король и Шут',
-      description: 'Хоррор-панк из Санкт-Петербурга',
-      image: 'lib/images/king.png',
-      songsLink: 'https://3akkorda.net/russkie/korol-i-shut/',
-    ),
-    Artist(
-      name: 'Ария',
-      description: 'Легенда советского и российского метала',
-      image: 'lib/images/aria.png',
-      songsLink: 'https://3akkorda.net/russkie/ariya/',
-    ),
-    Artist(
-      name: 'Макс Корж',
-      description: 'Автор-исполнитель из Беларуси',
-      image: 'lib/images/max.png',
-      songsLink: 'https://3akkorda.net/russkie/maks-korzh/',
-    ),
-    Artist(
-      name: 'Алёна Швец',
-      description: 'Певица, автор-исполнитель, гитаристка',
-      image: 'lib/images/shvec.png',
-      songsLink: 'https://3akkorda.net/russkie/alena-svec/',
-    ),
-    Artist(
-      name: 'Nautilus Pompilius',
-      description: 'Уральско-питерская рок-группа',
-      image: 'lib/images/nautilius.png',
-      songsLink: 'https://3akkorda.net/russkie/nautilus-pompilius/',
+      songsLink: 'https://amdm.ru/akkordi/splin/',
     ),
   ];
 
   static const List<SongCollection> collections = [
     SongCollection(
-      title: 'Для новичка',
-      subtitle: 'Простые песни на 3 аккордах',
-      image: 'lib/images/gitara7.png',
-      link: 'https://amdm.ru/akkordi/popular/all/',
-    ),
-    SongCollection(
-      title: 'Русский рок',
-      subtitle: 'Кино, ДДТ, Сплин и другие',
-      image: 'lib/images/gitara2.png',
-      link: 'https://amdm.ru/akkordi/',
-    ),
-    SongCollection(
-      title: 'Песни из фильмов',
-      subtitle: 'Саундтреки и легендарные хиты',
-      image: 'lib/images/pfilm.png',
-      link: 'https://amdm.ru/akkordi/prikolnie_pesni/',
-    ),
-    SongCollection(
-      title: 'У костра',
-      subtitle: 'Атмосфера похода и гитары у огня',
-      image: 'lib/images/pcoster2.png',
-      link: 'https://amdm.ru/akkordi/popular/all/',
+      title: 'Дворовые песни',
+      subtitle: 'Классика под гитару во дворе',
+      image: 'lib/images/pdvor.png',
+      link: 'https://amdm.ru/akkordi/dvorovye_pesni/',
     ),
     SongCollection(
       title: 'Народные и застольные',
       subtitle: 'Песни для большой компании',
       image: 'lib/images/pstol2.png',
-      link: 'https://amdm.ru/akkordi/popular/all/',
+      link: 'https://amdm.ru/akkordi/narodnye_i_zastolnye_pesni/',
     ),
     SongCollection(
-      title: 'Дворовые',
-      subtitle: 'Классика под гитару во дворе',
-      image: 'lib/images/pdvor.png',
-      link: 'https://amdm.ru/akkordi/popular/all/',
+      title: 'Песни из кино и мультфильмов',
+      subtitle: 'Саундтреки и легендарные хиты',
+      image: 'lib/images/pfilm.png',
+      link: 'https://amdm.ru/akkordi/pesni_iz_kino_i_multfilmov/',
+    ),
+    SongCollection(
+      title: 'Туристические песни',
+      subtitle: 'В поход с гитарой',
+      image: 'lib/images/pcoster2.png',
+      link: 'https://amdm.ru/akkordi/turisticheskie_pesni/',
+    ),
+    SongCollection(
+      title: 'Прикольные песни',
+      subtitle: 'Для весёлой компании',
+      image: 'lib/images/gitara7.png',
+      link: 'https://amdm.ru/akkordi/prikolnye_pesni/',
+    ),
+    SongCollection(
+      title: 'Студенческие песни',
+      subtitle: 'Студенческий фольклор',
+      image: 'lib/images/gitara2.png',
+      link: 'https://amdm.ru/akkordi/studencheskie_pesni/',
     ),
   ];
 
