@@ -21,21 +21,73 @@ class SongsScreen extends StatefulWidget {
 
 class _SongsScreenState extends State<SongsScreen> {
   final _searchController = TextEditingController();
-  int _page = 1;
+  final _scrollController = ScrollController();
+  final List<SongSummary> _songs = [];
+
+  int _page = 0;
   String? _query;
   bool _favoritesOnly = false;
-  late Future<List<SongSummary>> _future;
+  bool _isLoading = false;
+  bool _hasMore = true;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
-    _future = widget.repository.fetchSongsPage(page: _page);
+    _scrollController.addListener(_onScroll);
+    _loadMore(reset: true);
   }
 
-  void _reload() {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_hasMore || _isLoading || _error != null) return;
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 400;
+    if (_scrollController.position.pixels >= threshold) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore({bool reset = false}) async {
+    if (_isLoading) return;
     setState(() {
-      _future = widget.repository.fetchSongsPage(page: _page, query: _query);
+      _isLoading = true;
+      _error = null;
+      if (reset) {
+        _songs.clear();
+        _page = 0;
+        _hasMore = true;
+      }
     });
+
+    final nextPage = _page + 1;
+    try {
+      final results = await widget.repository.fetchSongsPage(page: nextPage, query: _query);
+      if (!mounted) return;
+      setState(() {
+        _page = nextPage;
+        _songs.addAll(results);
+        _hasMore = results.isNotEmpty;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _query = value.trim().isEmpty ? null : value.trim();
+    _loadMore(reset: true);
   }
 
   void _openSong(SongSummary song) {
@@ -48,23 +100,17 @@ class _SongsScreenState extends State<SongsScreen> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final favorites = context.watch<FavoritesStore>();
 
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   'Песни',
                   style: TextStyle(
@@ -81,11 +127,7 @@ class _SongsScreenState extends State<SongsScreen> {
             child: AppSearchField(
               controller: _searchController,
               hintText: 'Поиск песен...',
-              onSubmitted: (value) {
-                _query = value.trim().isEmpty ? null : value.trim();
-                _page = 1;
-                _reload();
-              },
+              onSubmitted: _onSearchChanged,
             ),
           ),
           const SizedBox(height: 12),
@@ -110,69 +152,66 @@ class _SongsScreenState extends State<SongsScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: _favoritesOnly
-                ? _FavoritesList(
-                    favorites: favorites.all,
-                    onTap: _openSong,
-                  )
-                : FutureBuilder<List<SongSummary>>(
-                    future: _future,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const LoadingView();
-                      }
-                      if (snapshot.hasError) {
-                        return ErrorView(
-                          message: 'Не удалось загрузить песни.\n${snapshot.error}',
-                          onRetry: _reload,
-                        );
-                      }
-                      final songs = snapshot.data ?? const [];
-                      if (songs.isEmpty) {
-                        return const EmptyView(message: 'Ничего не найдено');
-                      }
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: songs.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == songs.length) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                    onPressed: _page > 1
-                                        ? () {
-                                            _page--;
-                                            _reload();
-                                          }
-                                        : null,
-                                    icon: const Icon(Icons.arrow_back_ios,
-                                        color: AppColors.primary, size: 18),
-                                  ),
-                                  Text('$_page',
-                                      style: const TextStyle(color: AppColors.textSecondary)),
-                                  IconButton(
-                                    onPressed: () {
-                                      _page++;
-                                      _reload();
-                                    },
-                                    icon: const Icon(Icons.arrow_forward_ios,
-                                        color: AppColors.primary, size: 18),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          final song = songs[index];
-                          return SongTile(song: song, onTap: () => _openSong(song));
-                        },
-                      );
-                    },
-                  ),
+                ? _FavoritesList(favorites: favorites.all, onTap: _openSong)
+                : _buildSongsList(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSongsList() {
+    if (_songs.isEmpty && _isLoading) {
+      return const LoadingView();
+    }
+    if (_songs.isEmpty && _error != null) {
+      return ErrorView(
+        message: 'Не удалось загрузить песни.\n$_error',
+        onRetry: () => _loadMore(reset: true),
+      );
+    }
+    if (_songs.isEmpty) {
+      return const EmptyView(message: 'Ничего не найдено');
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _songs.length + 1,
+      itemBuilder: (context, index) {
+        if (index == _songs.length) {
+          if (_error != null) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: TextButton(
+                  onPressed: _loadMore,
+                  child: const Text('Не удалось загрузить ещё — повторить',
+                      style: TextStyle(color: AppColors.primary)),
+                ),
+              ),
+            );
+          }
+          if (_isLoading) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            );
+          }
+          return const SizedBox(height: 24);
+        }
+        final song = _songs[index];
+        return SongTile(song: song, onTap: () => _openSong(song));
+      },
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
@@ -26,18 +28,22 @@ class ChordsApiService {
 
   final http.Client _client;
   static const _baseUrl = AmdmParser.baseUrl;
-  static const _timeout = Duration(seconds: 12);
+  static const _nativeTimeout = Duration(seconds: 12);
+  static const _proxyTimeout = Duration(seconds: 9);
 
   /// В браузере (Flutter Web) прямой запрос к amdm.ru с чужого домена
   /// блокируется политикой CORS — amdm.ru не присылает заголовок
   /// `Access-Control-Allow-Origin`. На Android/iOS/desktop этого
-  /// ограничения нет, там ходим напрямую; в вебе перебираем несколько
-  /// публичных CORS-прокси по очереди — бесплатные сервисы такого рода
-  /// сами по себе нестабильны, поэтому нельзя полагаться на один.
+  /// ограничения нет, там ходим напрямую; в вебе запускаем несколько
+  /// публичных CORS-прокси ОДНОВРЕМЕННО и берём тот, что ответит первым —
+  /// бесплатные сервисы такого рода сами по себе нестабильны, а гонка
+  /// вместо очереди по одному не даёт ждать по 30+ секунд, пока
+  /// перебираются все варианты один за другим.
   static const List<String Function(String)> _corsProxies = [
     _viaAllOrigins,
     _viaCorsProxyIo,
     _viaCodeTabs,
+    _viaThingproxy,
   ];
 
   static String _viaAllOrigins(String url) =>
@@ -49,31 +55,45 @@ class ChordsApiService {
   static String _viaCodeTabs(String url) =>
       'https://api.codetabs.com/v1/proxy?quest=${Uri.encodeComponent(url)}';
 
+  static String _viaThingproxy(String url) =>
+      'https://thingproxy.freeboard.io/fetch/$url';
+
   Future<Document> _getDocument(Uri uri) async {
     if (!kIsWeb) {
-      final response = await _requestOrThrow(uri);
+      final response = await _requestOrThrow(uri, _nativeTimeout);
       return html_parser.parse(response.body);
     }
-
-    Object? lastError;
-    for (final proxy in _corsProxies) {
-      final proxied = Uri.parse(proxy(uri.toString()));
-      try {
-        final response = await _requestOrThrow(proxied);
-        return html_parser.parse(response.body);
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    throw lastError is ChordsApiException
-        ? lastError
-        : ChordsApiException('Не удалось подключиться к серверу');
+    return _raceProxies(uri);
   }
 
-  Future<http.Response> _requestOrThrow(Uri uri) async {
+  /// Стучится сразу во все прокси и возвращает результат первого, кто
+  /// ответил успешно; падает только если провалились все.
+  Future<Document> _raceProxies(Uri uri) {
+    final completer = Completer<Document>();
+    var remaining = _corsProxies.length;
+    Object lastError = ChordsApiException('Не удалось подключиться к серверу');
+
+    for (final proxy in _corsProxies) {
+      final proxied = Uri.parse(proxy(uri.toString()));
+      _requestOrThrow(proxied, _proxyTimeout).then((response) {
+        if (completer.isCompleted) return;
+        completer.complete(html_parser.parse(response.body));
+      }).catchError((Object e) {
+        lastError = e;
+        remaining--;
+        if (remaining == 0 && !completer.isCompleted) {
+          completer.completeError(lastError);
+        }
+      });
+    }
+
+    return completer.future;
+  }
+
+  Future<http.Response> _requestOrThrow(Uri uri, Duration timeout) async {
     final http.Response response;
     try {
-      response = await _client.get(uri).timeout(_timeout);
+      response = await _client.get(uri).timeout(timeout);
     } catch (_) {
       throw ChordsApiException('Не удалось подключиться к серверу');
     }
