@@ -25,6 +25,8 @@ jobs:
       - run: flutter pub get
       - run: flutter build web --release --base-href /gitars_app/
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
