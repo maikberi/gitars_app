@@ -23,15 +23,23 @@ class SongTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         child: Row(
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 46,
+                height: 46,
                 color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
+                child: song.imageUrl == null
+                    ? const Icon(Icons.music_note_rounded, color: AppColors.primary)
+                    : Image.network(
+                        song.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.music_note_rounded,
+                          color: AppColors.primary,
+                        ),
+                      ),
               ),
-              child: const Icon(Icons.music_note_rounded,
-                  color: AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(

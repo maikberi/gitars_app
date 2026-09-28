@@ -5,6 +5,7 @@ class SongSummary {
     required this.title,
     required this.artist,
     required this.link,
+    this.imageUrl,
   });
 
   final String id;
@@ -12,19 +13,30 @@ class SongSummary {
   final String artist;
   final String link;
 
+  /// Фото исполнителя со страницы-источника, если было в разметке.
+  final String? imageUrl;
+
   factory SongSummary.fromLink({
     required String title,
     required String artist,
     required String link,
+    String? imageUrl,
   }) {
-    return SongSummary(id: link, title: title, artist: artist, link: link);
+    return SongSummary(
+      id: link,
+      title: title,
+      artist: artist,
+      link: link,
+      imageUrl: imageUrl,
+    );
   }
 
-  Map<String, String> toJson() => {
+  Map<String, String?> toJson() => {
         'id': id,
         'title': title,
         'artist': artist,
         'link': link,
+        'imageUrl': imageUrl,
       };
 
   factory SongSummary.fromJson(Map<String, dynamic> json) => SongSummary(
@@ -32,6 +44,7 @@ class SongSummary {
         title: json['title'] as String,
         artist: json['artist'] as String,
         link: json['link'] as String,
+        imageUrl: json['imageUrl'] as String?,
       );
 
   @override

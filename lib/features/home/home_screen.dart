@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/state_views.dart';
 import '../collections/collection_songs_screen.dart';
+import '../search/search_screen.dart';
 import '../song_detail/song_detail_screen.dart';
 import '../songs/songs_screen.dart';
 
@@ -21,11 +22,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<SongSummary>> _popularFuture;
+  late Future<List<Artist>> _artistsFuture;
+  late Future<List<SongCollection>> _collectionsFuture;
 
   @override
   void initState() {
     super.initState();
     _popularFuture = widget.repository.fetchSongsPage(page: 1);
+    _artistsFuture = widget.repository.fetchPopularArtists();
+    _collectionsFuture = widget.repository.fetchThemeCollections();
   }
 
   void _openSong(SongSummary song) {
@@ -87,6 +92,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppColors.textSecondary),
                   ),
                 ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SearchScreen(repository: widget.repository),
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.search, color: AppColors.textSecondary),
+                      SizedBox(width: 10),
+                      Text(
+                        'Поиск песен, исполнителей, аккордов...',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -164,16 +200,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 96,
+              height: 128,
               child: FutureBuilder<List<SongSummary>>(
                 future: _popularFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const LoadingView(height: 96);
+                    return const LoadingView(height: 128);
                   }
                   if (snapshot.hasError) {
                     return ErrorView(
-                      height: 96,
+                      height: 128,
                       message: 'Не удалось загрузить песни',
                       onRetry: () => setState(() {
                         _popularFuture = widget.repository.fetchSongsPage(page: 1);
@@ -182,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                   final songs = snapshot.data ?? const [];
                   if (songs.isEmpty) {
-                    return const EmptyView(message: 'Пока пусто', height: 96);
+                    return const EmptyView(message: 'Пока пусто', height: 128);
                   }
                   return ListView.separated(
                     scrollDirection: Axis.horizontal,
@@ -208,25 +244,46 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: SizedBox(
               height: 110,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: SongsRepository.collections.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  final collection = SongsRepository.collections[index];
-                  return _CollectionCard(
-                    collection: collection,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CollectionSongsScreen(
-                          title: collection.title,
-                          link: collection.link,
-                          repository: widget.repository,
+              child: FutureBuilder<List<SongCollection>>(
+                future: _collectionsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const LoadingView(height: 110);
+                  }
+                  if (snapshot.hasError) {
+                    return ErrorView(
+                      height: 110,
+                      message: 'Не удалось загрузить подборки',
+                      onRetry: () => setState(() {
+                        _collectionsFuture = widget.repository.fetchThemeCollections();
+                      }),
+                    );
+                  }
+                  final collections = snapshot.data ?? const [];
+                  if (collections.isEmpty) {
+                    return const EmptyView(message: 'Пока пусто', height: 110);
+                  }
+                  return ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: collections.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                    itemBuilder: (context, index) {
+                      final collection = collections[index];
+                      return _CollectionCard(
+                        collection: collection,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CollectionSongsScreen(
+                              title: collection.title,
+                              link: collection.link,
+                              repository: widget.repository,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -239,16 +296,37 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: SizedBox(
               height: 110,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: SongsRepository.popularArtists.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 18),
-                itemBuilder: (context, index) {
-                  final artist = SongsRepository.popularArtists[index];
-                  return _ArtistAvatar(
-                    artist: artist,
-                    onTap: () => _openArtist(artist),
+              child: FutureBuilder<List<Artist>>(
+                future: _artistsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const LoadingView(height: 110);
+                  }
+                  if (snapshot.hasError) {
+                    return ErrorView(
+                      height: 110,
+                      message: 'Не удалось загрузить исполнителей',
+                      onRetry: () => setState(() {
+                        _artistsFuture = widget.repository.fetchPopularArtists();
+                      }),
+                    );
+                  }
+                  final artists = snapshot.data ?? const [];
+                  if (artists.isEmpty) {
+                    return const EmptyView(message: 'Пока пусто', height: 110);
+                  }
+                  return ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: artists.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 18),
+                    itemBuilder: (context, index) {
+                      final artist = artists[index];
+                      return _ArtistAvatar(
+                        artist: artist,
+                        onTap: () => _openArtist(artist),
+                      );
+                    },
                   );
                 },
               ),
@@ -271,31 +349,41 @@ class _PopularSongCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
+      child: SizedBox(
+        width: 96,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.album_rounded, color: AppColors.primary, size: 28),
-            const Spacer(),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(48),
+              child: Container(
+                width: 72,
+                height: 72,
+                color: AppColors.surfaceElevated,
+                child: song.imageUrl == null
+                    ? const Icon(Icons.album_rounded, color: AppColors.primary)
+                    : Image.network(
+                        song.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.album_rounded, color: AppColors.primary),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               song.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                  color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
             ),
             Text(
               song.artist,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
             ),
           ],
         ),
@@ -317,36 +405,29 @@ class _CollectionCard extends StatelessWidget {
       child: Container(
         width: 150,
         decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          image: DecorationImage(
-            image: AssetImage(collection.image),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.35),
-              BlendMode.darken,
-            ),
-          ),
+          image: collection.imageUrl == null
+              ? null
+              : DecorationImage(
+                  image: NetworkImage(collection.imageUrl!),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.35),
+                    BlendMode.darken,
+                  ),
+                ),
         ),
         padding: const EdgeInsets.all(12),
         alignment: Alignment.bottomLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              collection.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              collection.subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-            ),
-          ],
+        child: Text(
+          collection.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -370,7 +451,11 @@ class _ArtistAvatar extends StatelessWidget {
             CircleAvatar(
               radius: 32,
               backgroundColor: AppColors.surfaceElevated,
-              backgroundImage: AssetImage(artist.image),
+              backgroundImage:
+                  artist.imageUrl != null ? NetworkImage(artist.imageUrl!) : null,
+              child: artist.imageUrl == null
+                  ? const Icon(Icons.person, color: AppColors.textSecondary)
+                  : null,
             ),
             const SizedBox(height: 6),
             Text(

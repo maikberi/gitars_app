@@ -2,6 +2,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 
+import '../models/artist.dart';
 import '../models/song.dart';
 
 /// Бросается, когда источник данных недоступен или прислал неожиданный ответ.
@@ -60,6 +61,60 @@ class ChordsApiService {
     return _parseSongRows(doc);
   }
 
+  /// Блок «Популярные исполнители» на главной странице amdm.ru.
+  Future<List<Artist>> fetchPopularArtists() async {
+    final doc = await _getDocument(Uri.parse(_baseUrl));
+    final section = _findWidgetByHeading(doc, 'Популярные исполнители');
+    if (section == null) return const [];
+
+    final result = <Artist>[];
+    for (final cell in section.querySelectorAll('td.artist_name')) {
+      final links = cell.querySelectorAll('a.artist');
+      // Строка-песня (артист + трек) — не то, что нам нужно здесь.
+      if (links.length != 1) continue;
+      final name = links.first.text.trim();
+      final href = links.first.attributes['href'];
+      if (href == null || name.isEmpty) continue;
+
+      final imageSrc = cell.parent?.querySelector('td.photo img')?.attributes['src'];
+      final imageUrl =
+          imageSrc == null ? null : Uri.parse(_baseUrl).resolve(imageSrc).toString();
+
+      result.add(Artist(name: name, songsLink: href, imageUrl: imageUrl));
+    }
+    return result;
+  }
+
+  /// Блок «Аккорды песен по тематике» на главной странице amdm.ru.
+  Future<List<SongCollection>> fetchThemeCollections() async {
+    final doc = await _getDocument(Uri.parse(_baseUrl));
+    final result = <SongCollection>[];
+    for (final item in doc.querySelectorAll('.b-artist-tematika__item')) {
+      final link = item.querySelector('a');
+      final href = link?.attributes['href'];
+      final title = link?.text.trim();
+      if (href == null || title == null || title.isEmpty) continue;
+
+      final imageSrc = item.querySelector('img')?.attributes['src'];
+      final imageUrl =
+          imageSrc == null ? null : Uri.parse(_baseUrl).resolve(imageSrc).toString();
+
+      result.add(SongCollection(title: title, link: href, imageUrl: imageUrl));
+    }
+    return result;
+  }
+
+  /// Находит виджет `.b-index-top-songs__item` на главной странице по тексту
+  /// его заголовка `<h3>` — так на ней размечены все три колонки
+  /// («Новые подборы», «Популярные исполнители», «Популярные подборы»).
+  Element? _findWidgetByHeading(Document doc, String heading) {
+    for (final widget in doc.querySelectorAll('.b-index-top-songs__item')) {
+      final h3 = widget.querySelector('h3')?.text.trim();
+      if (h3 == heading) return widget;
+    }
+    return null;
+  }
+
   /// amdm.ru использует два разных шаблона таблицы `table.items`:
   /// на общих страницах (главная, поиск, темы) каждая ячейка `td.artist_name`
   /// содержит две ссылки `a.artist` — исполнитель и песня; на странице
@@ -91,7 +146,15 @@ class ChordsApiService {
       final href = songLink.attributes['href'];
       if (href == null || artist.isEmpty || title.isEmpty) return null;
 
-      return SongSummary.fromLink(title: title, artist: artist, link: href);
+      final imageSrc = cell.parent?.querySelector('td.photo img')?.attributes['src'];
+      final imageUrl = imageSrc == null ? null : Uri.parse(_baseUrl).resolve(imageSrc).toString();
+
+      return SongSummary.fromLink(
+        title: title,
+        artist: artist,
+        link: href,
+        imageUrl: imageUrl,
+      );
     } catch (_) {
       return null;
     }

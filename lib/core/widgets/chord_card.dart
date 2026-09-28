@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../data/repositories/songs_repository.dart';
 import '../theme/app_colors.dart';
 
 /// Карточка с диаграммой аккорда (картинка грифа + название).
+///
+/// Диаграмма подтягивается напрямую с amdm.ru; если сеть недоступна или
+/// именно такого файла там нет — используется собственная картинка из
+/// ассетов, а если и её нет — просто иконка.
 class ChordCard extends StatelessWidget {
   const ChordCard({super.key, required this.name, this.onTap});
 
@@ -25,13 +32,11 @@ class ChordCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: Image.asset(
-                _assetPath,
+              child: SvgPicture.network(
+                SongsRepository.chordDiagramUrl(name),
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.music_note_rounded,
-                  color: AppColors.textSecondary,
-                ),
+                placeholderBuilder: (_) => _AssetFallback(assetPath: _assetPath),
+                errorBuilder: (_, __, ___) => _AssetFallback(assetPath: _assetPath),
               ),
             ),
             const SizedBox(height: 6),
@@ -44,6 +49,23 @@ class ChordCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AssetFallback extends StatelessWidget {
+  const _AssetFallback({required this.assetPath});
+  final String assetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      assetPath,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const Icon(
+        Icons.music_note_rounded,
+        color: AppColors.textSecondary,
       ),
     );
   }
