@@ -47,5 +47,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Микрофон нужен для тюнера, чтобы определять высоту звука струны.</string>
 </dict>
 </plist>

@@ -1,33 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gitars_app/parser.dart';
+import 'package:provider/provider.dart';
 
-import 'homepage.dart';
+import 'app.dart';
+import 'data/services/favorites_store.dart';
 
-void main() async {
-  Parser parser = Parser();
-  //parser.getsong();
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.grey.shade900,
-  ),
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(systemNavigationBarColor: Colors.grey.shade900),
   );
 
-  runApp(const MyApp());
-}
+  final favoritesStore = FavoritesStore()..load();
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(),
-    );
-  }
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<FavoritesStore>.value(value: favoritesStore),
+      ],
+      child: const GitarsApp(),
+    ),
+  );
 }

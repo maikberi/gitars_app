@@ -2,6 +2,7 @@
     package="com.example.gitars_app">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:label="gitars_app"
         android:name="${applicationName}"

@@ -1,16 +1,40 @@
-# gitars_app
+# Гитара — песни, аккорды, тюнер
 
-A new Flutter project.
+Flutter-приложение для гитаристов: тексты песен с аккордами, библиотека
+аккордов, тюнер по микрофону и метроном.
 
-## Getting Started
+## Архитектура
 
-This project is a starting point for a Flutter application.
+```
+lib/
+  core/           тема оформления и переиспользуемые виджеты
+  data/
+    models/       модели данных (Song, Artist, SongCollection...)
+    services/     ChordsApiService (источник данных), FavoritesStore
+    repositories/ SongsRepository — единая точка доступа к данным для экранов
+  features/       по одному каталогу на экран (home, songs, song_detail,
+                   chords, tuner, metronome, profile, premium, collections)
+  app.dart        корневой виджет и нижняя навигация
+  main.dart       точка входа, инициализация провайдеров
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Данные
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Отдельного публичного API аккордов для русскоязычных песен нет, поэтому
+`ChordsApiService` получает данные с открытых страниц источника и
+преобразует их в типизированные модели. Вся хрупкая работа с HTML-разметкой
+изолирована в этом сервисе — при изменении разметки сайта достаточно
+поправить только его.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Тюнер
+
+Определение высоты звука реализовано через микрофон (`record`) и
+автокорреляционный алгоритм на чистом Dart — без нативных DSP-библиотек.
+Экран запрашивает разрешение на микрофон при первом запуске.
+
+## Запуск
+
+```bash
+flutter pub get
+flutter run
+```
