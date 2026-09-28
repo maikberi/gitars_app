@@ -23,8 +23,8 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - name: Fetch home screen data from amdm.ru (server-side, no CORS)
-        run: dart run tool/fetch_home_data.dart
+      - name: Build browsing catalog from amdm.ru (server-side, no CORS)
+        run: dart run tool/build_catalog.dart
       - run: flutter build web --release --base-href /gitars_app/
       - uses: actions/configure-pages@v5
         with:
