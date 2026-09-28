@@ -31,26 +31,56 @@ class ChordsApiService {
   /// В браузере (Flutter Web) прямой запрос к amdm.ru с чужого домена
   /// блокируется политикой CORS — amdm.ru не присылает заголовок
   /// `Access-Control-Allow-Origin`. На Android/iOS/desktop этого
-  /// ограничения нет, там ходим напрямую; в вебе заворачиваем запрос
-  /// через публичный CORS-прокси.
-  Uri _requestUri(Uri target) {
-    if (!kIsWeb) return target;
-    return Uri.parse(
-      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(target.toString())}',
-    );
-  }
+  /// ограничения нет, там ходим напрямую; в вебе перебираем несколько
+  /// публичных CORS-прокси по очереди — бесплатные сервисы такого рода
+  /// сами по себе нестабильны, поэтому нельзя полагаться на один.
+  static const List<String Function(String)> _corsProxies = [
+    _viaAllOrigins,
+    _viaCorsProxyIo,
+    _viaCodeTabs,
+  ];
+
+  static String _viaAllOrigins(String url) =>
+      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
+
+  static String _viaCorsProxyIo(String url) =>
+      'https://corsproxy.io/?url=${Uri.encodeComponent(url)}';
+
+  static String _viaCodeTabs(String url) =>
+      'https://api.codetabs.com/v1/proxy?quest=${Uri.encodeComponent(url)}';
 
   Future<Document> _getDocument(Uri uri) async {
+    if (!kIsWeb) {
+      final response = await _requestOrThrow(uri);
+      return html_parser.parse(response.body);
+    }
+
+    Object? lastError;
+    for (final proxy in _corsProxies) {
+      final proxied = Uri.parse(proxy(uri.toString()));
+      try {
+        final response = await _requestOrThrow(proxied);
+        return html_parser.parse(response.body);
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError is ChordsApiException
+        ? lastError
+        : ChordsApiException('Не удалось подключиться к серверу');
+  }
+
+  Future<http.Response> _requestOrThrow(Uri uri) async {
     final http.Response response;
     try {
-      response = await _client.get(_requestUri(uri)).timeout(_timeout);
+      response = await _client.get(uri).timeout(_timeout);
     } catch (_) {
       throw ChordsApiException('Не удалось подключиться к серверу');
     }
     if (response.statusCode != 200) {
       throw ChordsApiException('Сервер вернул ошибку ${response.statusCode}');
     }
-    return html_parser.parse(response.body);
+    return response;
   }
 
   /// Поиск песен по слову [query]. Пагинация ([page]) на amdm.ru для
