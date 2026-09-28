@@ -22,16 +22,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<SongSummary>> _popularFuture;
-  late Future<List<Artist>> _artistsFuture;
-  late Future<List<SongCollection>> _collectionsFuture;
+  late Future<HomeSnapshot> _snapshotFuture;
 
   @override
   void initState() {
     super.initState();
-    _popularFuture = widget.repository.fetchSongsPage(page: 1);
-    _artistsFuture = widget.repository.fetchPopularArtists();
-    _collectionsFuture = widget.repository.fetchThemeCollections();
+    _snapshotFuture = widget.repository.fetchHomeSnapshot();
+  }
+
+  void _reload() {
+    setState(() {
+      _snapshotFuture = widget.repository.fetchHomeSnapshot();
+    });
   }
 
   void _openSong(SongSummary song) {
@@ -200,137 +202,93 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 128,
-              child: FutureBuilder<List<SongSummary>>(
-                future: _popularFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const LoadingView(height: 128);
-                  }
-                  if (snapshot.hasError) {
-                    return ErrorView(
+            child: FutureBuilder<HomeSnapshot>(
+              future: _snapshotFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const LoadingView(height: 300);
+                }
+                if (snapshot.hasError) {
+                  return ErrorView(
+                    height: 300,
+                    message: 'Не удалось загрузить данные.\n${snapshot.error}',
+                    onRetry: _reload,
+                  );
+                }
+                final data = snapshot.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
                       height: 128,
-                      message: 'Не удалось загрузить песни',
-                      onRetry: () => setState(() {
-                        _popularFuture = widget.repository.fetchSongsPage(page: 1);
-                      }),
-                    );
-                  }
-                  final songs = snapshot.data ?? const [];
-                  if (songs.isEmpty) {
-                    return const EmptyView(message: 'Пока пусто', height: 128);
-                  }
-                  return ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: songs.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      final song = songs[index];
-                      return _PopularSongCard(
-                        song: song,
-                        onTap: () => _openSong(song),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          SliverToBoxAdapter(
-            child: SectionHeader(title: 'Подборки', actionLabel: 'Смотреть все'),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 110,
-              child: FutureBuilder<List<SongCollection>>(
-                future: _collectionsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const LoadingView(height: 110);
-                  }
-                  if (snapshot.hasError) {
-                    return ErrorView(
-                      height: 110,
-                      message: 'Не удалось загрузить подборки',
-                      onRetry: () => setState(() {
-                        _collectionsFuture = widget.repository.fetchThemeCollections();
-                      }),
-                    );
-                  }
-                  final collections = snapshot.data ?? const [];
-                  if (collections.isEmpty) {
-                    return const EmptyView(message: 'Пока пусто', height: 110);
-                  }
-                  return ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: collections.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      final collection = collections[index];
-                      return _CollectionCard(
-                        collection: collection,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CollectionSongsScreen(
-                              title: collection.title,
-                              link: collection.link,
-                              repository: widget.repository,
+                      child: data.songs.isEmpty
+                          ? const EmptyView(message: 'Пока пусто', height: 128)
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: data.songs.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 14),
+                              itemBuilder: (context, index) {
+                                final song = data.songs[index];
+                                return _PopularSongCard(
+                                  song: song,
+                                  onTap: () => _openSong(song),
+                                );
+                              },
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          const SliverToBoxAdapter(
-            child: SectionHeader(title: 'Популярные исполнители'),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 110,
-              child: FutureBuilder<List<Artist>>(
-                future: _artistsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const LoadingView(height: 110);
-                  }
-                  if (snapshot.hasError) {
-                    return ErrorView(
+                    ),
+                    const SizedBox(height: 24),
+                    const SectionHeader(title: 'Подборки', actionLabel: 'Смотреть все'),
+                    SizedBox(
                       height: 110,
-                      message: 'Не удалось загрузить исполнителей',
-                      onRetry: () => setState(() {
-                        _artistsFuture = widget.repository.fetchPopularArtists();
-                      }),
-                    );
-                  }
-                  final artists = snapshot.data ?? const [];
-                  if (artists.isEmpty) {
-                    return const EmptyView(message: 'Пока пусто', height: 110);
-                  }
-                  return ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: artists.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 18),
-                    itemBuilder: (context, index) {
-                      final artist = artists[index];
-                      return _ArtistAvatar(
-                        artist: artist,
-                        onTap: () => _openArtist(artist),
-                      );
-                    },
-                  );
-                },
-              ),
+                      child: data.collections.isEmpty
+                          ? const EmptyView(message: 'Пока пусто', height: 110)
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: data.collections.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 14),
+                              itemBuilder: (context, index) {
+                                final collection = data.collections[index];
+                                return _CollectionCard(
+                                  collection: collection,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CollectionSongsScreen(
+                                        title: collection.title,
+                                        link: collection.link,
+                                        repository: widget.repository,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 24),
+                    const SectionHeader(title: 'Популярные исполнители'),
+                    SizedBox(
+                      height: 110,
+                      child: data.artists.isEmpty
+                          ? const EmptyView(message: 'Пока пусто', height: 110)
+                          : ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: data.artists.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 18),
+                              itemBuilder: (context, index) {
+                                final artist = data.artists[index];
+                                return _ArtistAvatar(
+                                  artist: artist,
+                                  onTap: () => _openArtist(artist),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
