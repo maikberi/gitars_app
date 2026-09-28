@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../data/repositories/songs_repository.dart';
 import '../theme/app_colors.dart';
+import '../utils/cors_proxy.dart';
 
 /// Карточка с диаграммой аккорда (картинка грифа + название).
 ///
@@ -33,7 +34,7 @@ class ChordCard extends StatelessWidget {
           children: [
             Expanded(
               child: SvgPicture.network(
-                SongsRepository.chordDiagramUrl(name),
+                withCorsProxyIfWeb(SongsRepository.chordDiagramUrl(name)),
                 fit: BoxFit.contain,
                 placeholderBuilder: (_) => _AssetFallback(assetPath: _assetPath),
                 errorBuilder: (_, __, ___) => _AssetFallback(assetPath: _assetPath),

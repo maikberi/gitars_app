@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/song.dart';
 import '../../data/services/favorites_store.dart';
 import '../theme/app_colors.dart';
+import '../utils/cors_proxy.dart';
 
 class SongTile extends StatelessWidget {
   const SongTile({super.key, required this.song, required this.onTap});
@@ -32,7 +33,7 @@ class SongTile extends StatelessWidget {
                 child: song.imageUrl == null
                     ? const Icon(Icons.music_note_rounded, color: AppColors.primary)
                     : Image.network(
-                        song.imageUrl!,
+                        withCorsProxyIfWeb(song.imageUrl!),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.music_note_rounded,

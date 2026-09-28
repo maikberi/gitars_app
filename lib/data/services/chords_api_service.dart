@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -27,10 +28,22 @@ class ChordsApiService {
   static const _baseUrl = 'https://amdm.ru';
   static const _timeout = Duration(seconds: 12);
 
+  /// В браузере (Flutter Web) прямой запрос к amdm.ru с чужого домена
+  /// блокируется политикой CORS — amdm.ru не присылает заголовок
+  /// `Access-Control-Allow-Origin`. На Android/iOS/desktop этого
+  /// ограничения нет, там ходим напрямую; в вебе заворачиваем запрос
+  /// через публичный CORS-прокси.
+  Uri _requestUri(Uri target) {
+    if (!kIsWeb) return target;
+    return Uri.parse(
+      'https://api.allorigins.win/raw?url=${Uri.encodeComponent(target.toString())}',
+    );
+  }
+
   Future<Document> _getDocument(Uri uri) async {
     final http.Response response;
     try {
-      response = await _client.get(uri).timeout(_timeout);
+      response = await _client.get(_requestUri(uri)).timeout(_timeout);
     } catch (_) {
       throw ChordsApiException('Не удалось подключиться к серверу');
     }

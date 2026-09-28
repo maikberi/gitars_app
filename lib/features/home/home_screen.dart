@@ -4,6 +4,7 @@ import '../../data/models/artist.dart';
 import '../../data/models/song.dart';
 import '../../data/repositories/songs_repository.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/cors_proxy.dart';
 import '../../core/widgets/section_header.dart';
 import '../../core/widgets/state_views.dart';
 import '../collections/collection_songs_screen.dart';
@@ -362,7 +363,7 @@ class _PopularSongCard extends StatelessWidget {
                 child: song.imageUrl == null
                     ? const Icon(Icons.album_rounded, color: AppColors.primary)
                     : Image.network(
-                        song.imageUrl!,
+                        withCorsProxyIfWeb(song.imageUrl!),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             const Icon(Icons.album_rounded, color: AppColors.primary),
@@ -410,7 +411,7 @@ class _CollectionCard extends StatelessWidget {
           image: collection.imageUrl == null
               ? null
               : DecorationImage(
-                  image: NetworkImage(collection.imageUrl!),
+                  image: NetworkImage(withCorsProxyIfWeb(collection.imageUrl!)),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.35),
@@ -451,8 +452,9 @@ class _ArtistAvatar extends StatelessWidget {
             CircleAvatar(
               radius: 32,
               backgroundColor: AppColors.surfaceElevated,
-              backgroundImage:
-                  artist.imageUrl != null ? NetworkImage(artist.imageUrl!) : null,
+              backgroundImage: artist.imageUrl != null
+                  ? NetworkImage(withCorsProxyIfWeb(artist.imageUrl!))
+                  : null,
               child: artist.imageUrl == null
                   ? const Icon(Icons.person, color: AppColors.textSecondary)
                   : null,

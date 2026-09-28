@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/cors_proxy.dart';
 import '../../core/widgets/chord_card.dart';
 import '../../core/widgets/search_field.dart';
 import '../../core/widgets/song_tile.dart';
@@ -153,8 +154,9 @@ class _SearchScreenState extends State<SearchScreen> {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: AppColors.surfaceElevated,
-                  backgroundImage:
-                      song.imageUrl != null ? NetworkImage(song.imageUrl!) : null,
+                  backgroundImage: song.imageUrl != null
+                      ? NetworkImage(withCorsProxyIfWeb(song.imageUrl!))
+                      : null,
                   child: song.imageUrl == null
                       ? const Icon(Icons.person, color: AppColors.textSecondary)
                       : null,
