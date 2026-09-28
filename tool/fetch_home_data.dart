@@ -13,7 +13,7 @@ import 'dart:io';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 
-import '../lib/data/services/amdm_parser.dart';
+import 'package:gitars_app/data/services/amdm_parser.dart';
 
 Future<void> main() async {
   final client = http.Client();
